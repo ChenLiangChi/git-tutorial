@@ -51,13 +51,13 @@ static struct argp_option options[] = {
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;    /** Condition variable */
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; /** Self explanatory */
 int count = 0;
-int count_to = 0;
+int *count_to = 0;
 
 typedef struct {
   int args[1];
   int verbose;
   int tick;
-} arguments_t:
+} arguments_t;
 
 void errno_abort(char *message) {
   perror(message);
@@ -91,6 +91,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
+int err_abort(int status, char *message) {
+  fprintf(stderr, "%s\n", message);
+  exit(status);
+  return 0;
+}
+
 void timer_callback(union sigval arg) {
   int error;
 
@@ -100,7 +106,7 @@ void timer_callback(union sigval arg) {
 
   states_run();
 
-  if (count >= count_to) {
+  if (count >= *count_to) {
     error = pthread_cond_signal(&cond); /** Signal condition fulfilled */
     if (error != 0)
       err_abort(error, "Signal condition");
@@ -143,7 +149,7 @@ void create_timer(int tick) {
 }
 
 void statemachine_callback(void) {
-  my_states_data **cur_data = states_get_data();
+  my_states_data *cur_data = states_get_data();
 
   int diff = cur_data->cur_val - cur_data->prev_val;
 
@@ -160,60 +166,50 @@ void statemachine_callback(void) {
 int main(int argc, char **argv) {
   int error;
 
-  srand(time(NULL)); /** Init random numbers */
+  srand (time (NULL)); /** Init random numbers */
 
-  /** Parse args */
+    /** Parse args */
   arguments_t arguments;
 
-  arguments.verbose = 0; /** Default values */
+  arguments.verbose = 0;   /** Default value */
   arguments.tick = DEFAULT_TICK;
-  argp_parse(&argp, argc, argv, 0, 0, &arguments);
+  argp_parse (&argp, argc, argv, 0, 0, &arguments);
 
-  count_to = arguments.args[0];
+  count_to = &arguments.args[0];
 
-  printf("Count until = %d\nVerbose = %s\nTick = %dms\n", count_to,
-         arguments.verbose ? "yes" : "no", arguments.tick);
+  printf ("Count until = %d\nVerbose = %s\nTick = %dms\n",
+	  *count_to, arguments.verbose ? "yes" : "no", arguments.tick);
 
-  /** Initialize state machine */
-  states_add(state_probe, state_two_enter, state_two_run, state_two_ext,
-             state_second_e, SECOND_STATE_NAME);
-  states_add(state_probe, NULL, state_three_run, NULL, state_third_e,
-             THIRD_STATE_NAME);
-  states_add(state_probe, NULL, state_one_run, NULL, state_first_e,
-             FIRST_STATE_NAME);
+  create_timer (arguments.tick);
 
-  states_set_callback(statemachine_callback);
+    /** Initialize state machine */
+  states_add (state_probe, NULL, state_one_run, NULL, state_first_e,
+	            FIRST_STATE_NAME);
+  states_add (state_probe, state_two_enter, state_two_run, state_two_exit,
+	            state_second_e, SECOND_STATE_NAME);
+  states_add (state_probe, NULL, state_three_run, NULL, state_third_e,
+	           THIRD_STATE_NAME);
 
-  states_init();
+  states_set_callback (statemachine_callback);
 
-  printf("\n### Starting State Machine ###\n\n");
+  states_init ();
 
-  /** Spawn a POSIX thread to block on the conditional count < count_out */
-  create_timer(arguments.tick);
+  error = pthread_mutex_lock (&mutex);
+  if (error != 0)
+    err_abort (error, "Lock mutex");
 
-  error = pthread_mutex_lock(&mutex);
-  if (error = 0)
-    err_abort(error, "Lock mutex");
-
-  while (count < count_to) {
-    /** Blocked thread can be awakened by a call to pthread_cond_signal */
-    error =
-        pthread_cond_wait(&cond, &mutex); /** Release mutex and block on cond */
+  while (count < *count_to){
+	  /** Blocked thread can be awakened by a call to pthread_cond_signal */
+    error = pthread_cond_wait (&cond, &mutex);  /** Release mutex and block on cond */
     if (error != 0)
-      err_abort(error, "Wait on condition");
+	    err_abort (error, "Wait on condition");
   }
 
-  error = pthread_mutex_unlock(&mutex);
+  error = pthread_mutex_unlock (&mutex);
   if (error != 0)
-    err_abort(error, "Unlock mutex");
+    err_abort (error, "Unlock mutex");
 
-  printf("Finshed\n");
+  printf("Finshed");
 
-  return;
-}
-
-void err_abort(int status, char *message) {
-  fprintf(stderr, "%s\n", message);
-  exit(status);
-  return 0;
+  return -1;
 }
