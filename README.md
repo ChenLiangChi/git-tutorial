@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-Liang Chi Chen ESPL
-This is the second try of this exercise. Because of the compile problem on macOS.
-=======
 # Compiling C programs
 
 The compiling of a C program takes place in three steps. Each instrumented by CMake. In the following couple of exercises you will look at each step and how they work. This will hopefully mean I have less questions to answer later in the semester when you get a linker error.
