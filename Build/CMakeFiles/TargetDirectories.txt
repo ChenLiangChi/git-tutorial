@@ -1,4 +1,0 @@
-/home/rtos-sim/Desktop/git-tutorial/Build/CMakeFiles/edit_cache.dir
-/home/rtos-sim/Desktop/git-tutorial/Build/CMakeFiles/rebuild_cache.dir
-/home/rtos-sim/Desktop/git-tutorial/Build/CMakeFiles/STATES_LIB.dir
-/home/rtos-sim/Desktop/git-tutorial/Build/CMakeFiles/state_machine.dir
