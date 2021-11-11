@@ -2,4 +2,4 @@
 doc/html
 doc/latex
 bin/
-Build/
+build/
