@@ -1,2 +1,5 @@
+#ignore data and folder
+doc/html
+doc/latex
 bin/
 Build/
